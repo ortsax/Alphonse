@@ -26,7 +26,7 @@ func main() {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	ctx := context.Background()
 
-	container, err := sqlstore.New(ctx, "sqlite", "file:examplestore.db?_pragma=foreign_keys(1)", dbLog)
+	container, err := sqlstore.New(ctx, "sqlite", "file:database.db?_pragma=foreign_keys(1)", dbLog)
 	if err != nil {
 		panic(err)
 	}
