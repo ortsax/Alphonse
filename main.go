@@ -4,14 +4,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"orstax/plugins"
-	"orstax/store"
-	"orstax/store/sqlstore"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
+
+	"orstax/plugins"
+	"orstax/store"
+	"orstax/store/sqlstore"
 
 	"github.com/joho/godotenv"
 	"go.mau.fi/whatsmeow"
@@ -20,6 +23,11 @@ import (
 	_ "github.com/lib/pq"
 	_ "modernc.org/sqlite"
 )
+
+// sourceDir is injected at build time via:
+//
+//	-ldflags "-X main.sourceDir=/path/to/src"
+var sourceDir string
 
 // loadEnv loads .env if present, otherwise falls back to .env.example.
 func loadEnv() {
@@ -84,25 +92,49 @@ func getDevice(ctx context.Context, container *sqlstore.Container, phone string)
 func main() {
 	loadEnv()
 
-	phoneArg := flag.String("phone-number", "", "Phone number (international format) used to identify or pair a device")
+	// ── CLI flags ────────────────────────────────────────────────────────────
+	phoneArg      := flag.String("phone-number",    "", "Phone number (international format) used to identify or pair a device")
+	updateFlag    := flag.Bool("update",             false, "Pull latest source and rebuild the binary in-place")
+	listFlag      := flag.Bool("list-sessions",      false, "List all paired sessions stored in the database")
+	deleteFlag    := flag.String("delete-session",  "", "Permanently delete the session for the given phone number")
+	resetFlag     := flag.String("reset-session",   "", "Reset the session for the given phone number so it can be re-paired")
 	flag.Parse()
 
-	dbLog := waLog.Stdout("Database", "ERROR", true)
 	ctx := context.Background()
 
+	// ── Management commands (exit after completion) ───────────────────────────
+	if *updateFlag {
+		runUpdate()
+		return
+	}
+
 	dialect, dbAddr := dbConfig()
+
+	if *listFlag {
+		runListSessions(ctx, dialect, dbAddr)
+		return
+	}
+	if *deleteFlag != "" {
+		runDeleteSession(ctx, dialect, dbAddr, *deleteFlag, false)
+		return
+	}
+	if *resetFlag != "" {
+		runDeleteSession(ctx, dialect, dbAddr, *resetFlag, true)
+		return
+	}
+
+	// ── Normal bot startup ────────────────────────────────────────────────────
+	dbLog := waLog.Stdout("Database", "ERROR", true)
 
 	container, err := sqlstore.New(ctx, dialect, dbAddr, dbLog)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create the bot_settings table (no user needed yet).
 	if err := plugins.InitDB(container.DB()); err != nil {
 		panic(fmt.Errorf("settings db init: %w", err))
 	}
 
-	// Wire LID resolver (owner phone resolved after Connect).
 	plugins.InitLIDStore(container.LIDMap, "")
 
 	deviceStore, err := getDevice(ctx, container, *phoneArg)
@@ -148,4 +180,135 @@ func main() {
 	<-c
 
 	client.Disconnect()
+}
+
+// ── Management command handlers ───────────────────────────────────────────────
+
+// runUpdate pulls the latest source and rebuilds the binary in-place.
+func runUpdate() {
+	if sourceDir == "" {
+		fmt.Fprintln(os.Stderr, "error: this binary was not built with a sourceDir.\nPlease reinstall using the install script.")
+		os.Exit(1)
+	}
+
+	fmt.Println("Pulling latest changes...")
+	pull := exec.Command("git", "-C", sourceDir, "pull")
+	pull.Stdout = os.Stdout
+	pull.Stderr = os.Stderr
+	if err := pull.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "git pull failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not determine executable path: %v\n", err)
+		os.Exit(1)
+	}
+	exePath, err = filepath.EvalSymlinks(exePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not resolve executable path: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Build to a temp file first so we never leave a half-written binary.
+	tmpPath := exePath + ".new"
+	ldflags := fmt.Sprintf("-s -w -X main.sourceDir=%s", sourceDir)
+
+	fmt.Println("Building new binary...")
+	build := exec.Command("go", "build",
+		"-ldflags", ldflags,
+		"-trimpath",
+		"-o", tmpPath,
+		".",
+	)
+	build.Dir = sourceDir
+	build.Stdout = os.Stdout
+	build.Stderr = os.Stderr
+	if err := build.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "build failed: %v\n", err)
+		_ = os.Remove(tmpPath)
+		os.Exit(1)
+	}
+
+	if err := os.Rename(tmpPath, exePath); err != nil {
+		// On Windows the running binary may be locked; give clear guidance.
+		fmt.Fprintf(os.Stderr, "could not replace binary (stop the bot first if it is running): %v\n", err)
+		fmt.Fprintf(os.Stderr, "New binary saved at: %s\n", tmpPath)
+		fmt.Fprintf(os.Stderr, "Replace manually with:\n  mv %s %s\n", tmpPath, exePath)
+		os.Exit(1)
+	}
+
+	fmt.Println("Orstax updated successfully.")
+}
+
+// runListSessions opens the database and prints all paired sessions.
+func runListSessions(ctx context.Context, dialect, dbAddr string) {
+	dbLog := waLog.Stdout("Database", "ERROR", true)
+	container, err := sqlstore.New(ctx, dialect, dbAddr, dbLog)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open database: %v\n", err)
+		os.Exit(1)
+	}
+
+	devices, err := container.GetAllDevices(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to list sessions: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(devices) == 0 {
+		fmt.Println("No sessions found.")
+		return
+	}
+
+	fmt.Printf("%-4s  %-20s  %s\n", "No.", "Phone", "JID")
+	fmt.Println(strings.Repeat("-", 60))
+	for i, dev := range devices {
+		phone := "(unknown)"
+		jid := "(unpaired)"
+		if dev.ID != nil {
+			phone = strings.SplitN(dev.ID.User, ".", 2)[0]
+			jid = dev.ID.String()
+		}
+		fmt.Printf("%-4d  %-20s  %s\n", i+1, phone, jid)
+	}
+}
+
+// runDeleteSession removes the stored session for the given phone number.
+// When reset is true the message instructs the user to re-pair.
+func runDeleteSession(ctx context.Context, dialect, dbAddr, phone string, reset bool) {
+	dbLog := waLog.Stdout("Database", "ERROR", true)
+	container, err := sqlstore.New(ctx, dialect, dbAddr, dbLog)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open database: %v\n", err)
+		os.Exit(1)
+	}
+
+	devices, err := container.GetAllDevices(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to query sessions: %v\n", err)
+		os.Exit(1)
+	}
+
+	for _, dev := range devices {
+		if dev.ID == nil {
+			continue
+		}
+		if strings.SplitN(dev.ID.User, ".", 2)[0] == phone {
+			if err := container.DeleteDevice(ctx, dev); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to delete session: %v\n", err)
+				os.Exit(1)
+			}
+			if reset {
+				fmt.Printf("Session for %s has been reset.\nRun with --phone-number %s to re-pair.\n", phone, phone)
+			} else {
+				fmt.Printf("Session for %s has been permanently deleted.\n", phone)
+			}
+			return
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "No session found for phone number: %s\n", phone)
+	os.Exit(1)
 }
