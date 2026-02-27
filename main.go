@@ -72,7 +72,36 @@ func cliProgress(pct int, label string) {
 	}
 }
 
-// loadEnv loads .env if present, otherwise falls back to .env.example.
+// printHelp prints a formatted usage/help screen and exits.
+func printHelp() {
+	fmt.Print(`
+ ╔══════════════════════════════════════════╗
+ ║           ᴏʀsᴛᴀx  WhatsApp Bot           ║
+ ╚══════════════════════════════════════════╝
+
+ ᴜsᴀɢᴇ
+   orstax [flags]
+
+ ғʟᴀɢs
+   --phone-number  <number>   Phone number (international format) to
+                              identify or pair a device
+   --update                   Pull latest source and rebuild binary
+   --list-sessions            List all paired sessions in the database
+   --delete-session <number>  Permanently delete a session by phone
+   --reset-session  <number>  Reset a session so it can be re-paired
+   -h, --help                 Show this help screen
+
+ ᴇxᴀᴍᴘʟᴇs
+   orstax                           Start the bot (uses stored session)
+   orstax --phone-number 2348000000 Pair a new device
+   orstax --update                  Update to latest version
+   orstax --list-sessions           Show all saved sessions
+
+`)
+	os.Exit(0)
+}
+
+
 func loadEnv() {
 	if err := godotenv.Load(".env"); err != nil {
 		_ = godotenv.Load(".env.example")
@@ -136,12 +165,18 @@ func main() {
 	loadEnv()
 
 	// ── CLI flags ────────────────────────────────────────────────────────────
+	flag.Usage = printHelp
+	helpFlag      := flag.Bool("help",            false, "")
 	phoneArg      := flag.String("phone-number",    "", "Phone number (international format) used to identify or pair a device")
 	updateFlag    := flag.Bool("update",             false, "Pull latest source and rebuild the binary in-place")
 	listFlag      := flag.Bool("list-sessions",      false, "List all paired sessions stored in the database")
 	deleteFlag    := flag.String("delete-session",  "", "Permanently delete the session for the given phone number")
 	resetFlag     := flag.String("reset-session",   "", "Reset the session for the given phone number so it can be re-paired")
 	flag.Parse()
+
+	if *helpFlag {
+		printHelp()
+	}
 
 	ctx := context.Background()
 
