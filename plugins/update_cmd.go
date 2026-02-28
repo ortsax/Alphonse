@@ -38,7 +38,7 @@ func updateBar(pct int) string {
 	var sb strings.Builder
 	if filled > 0 {
 		sb.WriteString("*")
-		for i := 0; i < filled; i++ {
+		for range filled {
 			sb.WriteRune('━')
 		}
 		sb.WriteString("*")
