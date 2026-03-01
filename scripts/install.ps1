@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 # ── Configuration ────────────────────────────────────────────────────────────
 $REPO_URL    = "https://github.com/ortsax/whatsapp-bot.git"
-$INSTALL_DIR = "$env:ProgramFiles\orstax"
+$INSTALL_DIR = "$env:ProgramData\orstax"
 $SRC_DIR     = "$INSTALL_DIR\src"
 $BIN_PATH    = "$INSTALL_DIR\orstax.exe"
 # ─────────────────────────────────────────────────────────────────────────────
@@ -52,10 +52,9 @@ if (Test-Path "$SRC_DIR\.git") {
 # ── Build ─────────────────────────────────────────────────────────────────────
 Write-Step "Building orstax"
 $env:CGO_ENABLED = "0"
-$ldflags = "-s -w -X main.sourceDir=$SRC_DIR"
 
 Push-Location $SRC_DIR
-go build -ldflags $ldflags -trimpath -o $BIN_PATH .
+go build "-ldflags=-s -w -X main.sourceDir=$SRC_DIR" -trimpath -o $BIN_PATH .
 Pop-Location
 
 if (-not (Test-Path $BIN_PATH)) {

@@ -282,8 +282,11 @@ func main() {
 // to check when the binary was not built with -X main.sourceDir.
 func candidateSourceDirs() []string {
 	candidates := []string{"/opt/orstax/src"}
+	if pd := os.Getenv("ProgramData"); pd != "" {
+		candidates = append([]string{filepath.Join(pd, "orstax", "src")}, candidates...)
+	}
 	if pf := os.Getenv("ProgramFiles"); pf != "" {
-		candidates = append([]string{filepath.Join(pf, "orstax", "src")}, candidates...)
+		candidates = append(candidates, filepath.Join(pf, "orstax", "src"))
 	}
 	return candidates
 }

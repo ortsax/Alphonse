@@ -28,10 +28,10 @@ sudo bash <(curl -fsSL https://raw.githubusercontent.com/ortsax/whatsapp-bot/mas
 Once complete you will see:
 
 ```
-Orstax is now installed
+  Orstax is installed!
 
-  Run with    orstax --phone-number <international-number>
-  Update with orstax -update
+  Run with      orstax --phone-number <number>
+  Update with   orstax --update
 ```
 
 > Open a new terminal after install so the updated PATH takes effect.
@@ -62,14 +62,6 @@ DATABASE_URL=database.db
 
 # PostgreSQL
 DATABASE_URL=postgres://user:pass@localhost:5432/mydb
-```
-
-## Session management
-
-```bash
-orstax -list-sessions                  # list all paired sessions
-orstax -delete-session <phone>         # permanently remove a session
-orstax -reset-session  <phone>         # remove a session so it can be re-paired
 ```
 
 Pulls the latest source and rebuilds the binary in-place. Stop the bot first on Windows before updating.
