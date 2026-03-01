@@ -222,7 +222,14 @@ func main() {
 
 	clientLog := waLog.Stdout("Client", "ERROR", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
+	client.UseRetryMessageStore = true
 	client.AddEventHandler(plugins.NewHandler(client))
+
+	// Pre-warm LID↔PN in-memory cache so DM sends don't pay per-lookup
+	// SQLite overhead on first contact.
+	if err := container.LIDMap.FillCache(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "warn: FillCache: %v\n", err)
+	}
 
 	// Wire update command with source dir and restart capability.
 	plugins.InitSourceDir(sourceDir)

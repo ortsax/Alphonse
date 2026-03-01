@@ -3,6 +3,7 @@ package plugins
 import (
 	"context"
 	"strings"
+	"time"
 
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
@@ -31,11 +32,17 @@ type Context struct {
 	Matched string   // the matched command name (lowercased)
 }
 
+// sendTimeout caps how long a single send may wait for the server ACK.
+// The default (75 s) means a stuck send holds messageSendLock for 75 s,
+// blocking every other Reply call.  20 s is still generous for normal
+// WhatsApp RTT (~100–500 ms) but releases the lock much sooner on failures.
+const sendTimeout = 20 * time.Second
+
 // Reply sends a plain-text message back to the originating chat.
 func (c *Context) Reply(text string) (whatsmeow.SendResponse, error) {
 	return c.Client.SendMessage(context.Background(), c.Event.Info.Chat, &waProto.Message{
 		Conversation: proto.String(text),
-	})
+	}, whatsmeow.SendRequestExtra{Timeout: sendTimeout})
 }
 
 var registry []*Command
