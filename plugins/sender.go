@@ -9,6 +9,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
+	"google.golang.org/protobuf/proto"
 )
 
 // sendTimeout caps the server-ACK wait in the queue worker.
@@ -48,5 +49,24 @@ func sendWorker() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[Send ERROR] %s → %s: %v\n", task.id, task.to, err)
 		}
+	}
+}
+
+// sendMention sends a text message with @mentions.
+func sendMention(ctx *Context, text string, jids []string) {
+	msg := &waProto.Message{
+		ExtendedTextMessage: &waProto.ExtendedTextMessage{
+			Text: proto.String(text),
+			ContextInfo: &waProto.ContextInfo{
+				MentionedJID: jids,
+			},
+		},
+	}
+	id := ctx.Client.GenerateMessageID()
+	sendQueue <- sendTask{
+		client: ctx.Client,
+		to:     ctx.Event.Info.Chat,
+		msg:    msg,
+		id:     id,
 	}
 }

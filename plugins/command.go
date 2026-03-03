@@ -17,6 +17,7 @@ type Command struct {
 	Pattern  string
 	Aliases  []string
 	IsSudo   bool
+	IsAdmin  bool
 	IsGroup  bool
 	Category string
 	Func     func(ctx *Context) error
@@ -101,26 +102,30 @@ func Register(cmd *Command) {
 func parseCommand(text string, prefixes []string) (prefix, name, rest string, ok bool) {
 	lower := strings.ToLower(text)
 	for _, p := range prefixes {
-		var after string
+		var afterOrig, afterLower string
 		if p == "" {
-			after = lower
+			afterOrig = text
+			afterLower = lower
 		} else {
 			lp := strings.ToLower(p)
 			if !strings.HasPrefix(lower, lp) {
 				continue
 			}
-			after = lower[len(lp):]
+			afterOrig = text[len(lp):]
+			afterLower = lower[len(lp):]
 		}
-		after = strings.TrimLeft(after, " ")
-		if after == "" {
+		afterLower = strings.TrimLeft(afterLower, " ")
+		if afterLower == "" {
 			continue
 		}
-		// Index-based split avoids allocating a []string.
-		if i := strings.IndexByte(after, ' '); i != -1 {
-			name = after[:i]
-			rest = strings.TrimSpace(after[i+1:])
+		// Trim leading spaces from original in sync with lower
+		trimmed := len(afterOrig) - len(strings.TrimLeft(afterOrig, " "))
+		afterOrig = afterOrig[trimmed:]
+		if i := strings.IndexByte(afterLower, ' '); i != -1 {
+			name = afterLower[:i]
+			rest = strings.TrimSpace(afterOrig[i+1:])
 		} else {
-			name = after
+			name = afterLower
 		}
 		return p, name, rest, true
 	}
@@ -222,6 +227,24 @@ func Dispatch(client *whatsmeow.Client, evt *events.Message) {
 	if cmd.IsSudo && !isSudo {
 		ctx.Reply(T().SudoOnly)
 		return
+	}
+
+	if cmd.IsAdmin && isGroup {
+		botJID := client.Store.ID.ToNonAD()
+		group, err := client.GetGroupInfo(context.Background(), evt.Info.Chat)
+		if err == nil {
+			if !botIsAdmin(group.Participants, ownerPhone, botJID.User) {
+				ctx.Reply(T().BotNotAdmin)
+				return
+			}
+			if !isSudo {
+				p := findParticipant(group.Participants, evt.Info.Sender.User, evt.Info.SenderAlt.User)
+				if p == nil || (!p.IsAdmin && !p.IsSuperAdmin) {
+					ctx.Reply(T().SenderNotAdmin)
+					return
+				}
+			}
+		}
 	}
 
 	if BotSettings.IsCmdDisabled(name) {

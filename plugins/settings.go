@@ -49,7 +49,10 @@ func InitDB(db *sql.DB) error {
 		value TEXT NOT NULL,
 		PRIMARY KEY (user, key)
 	)`)
-	return err
+	if err != nil {
+		return err
+	}
+	return initModTables()
 }
 
 // InitSettings sets the active user and loads their settings from the database.
