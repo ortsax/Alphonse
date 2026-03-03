@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.mau.fi/whatsmeow/appstate"
+	waCommon "go.mau.fi/whatsmeow/proto/waCommon"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 )
@@ -49,6 +50,11 @@ func init() {
 		IsAdmin:  true,
 		Func:     leaveCmd,
 	})
+	Register(&Command{
+		Pattern:  "clear",
+		Category: "utility",
+		Func:     clearCmd,
+	})
 }
 
 func pinCmd(ctx *Context) error {
@@ -61,43 +67,66 @@ func unpinCmd(ctx *Context) error {
 
 func pinToggle(ctx *Context, pin bool) error {
 	chat := ctx.Event.Info.Chat
-	ci := ctx.Event.Message.GetExtendedTextMessage().GetContextInfo()
+	rawMsg := ctx.Event.Message
+
+	ci := rawMsg.GetExtendedTextMessage().GetContextInfo()
 	msgID := ci.GetStanzaID()
 	participant := ci.GetParticipant()
 
-	// If replying to a message, pin/unpin that specific message in the chat.
+	// If replying to a message, pin/unpin that specific message.
 	if msgID != "" {
 		var senderJID types.JID
 		if participant != "" {
 			if parsed, err := types.ParseJID(participant); err == nil {
 				senderJID = parsed.ToNonAD()
+			} else {
+				senderJID = ctx.Event.Info.Sender.ToNonAD()
 			}
 		} else {
 			senderJID = ctx.Event.Info.Sender.ToNonAD()
 		}
+
+		isFromMe := isOwnJID(ctx.Client, senderJID.User)
+		key := &waCommon.MessageKey{
+			RemoteJID: proto.String(chat.String()),
+			FromMe:    proto.Bool(isFromMe),
+			ID:        proto.String(msgID),
+		}
+		if chat.Server == types.GroupServer {
+			s := senderJID.String()
+			key.Participant = proto.String(s)
+		}
+
 		pinType := waE2E.PinInChatMessage_PIN_FOR_ALL
+		var duration uint32 = 604800 // 7 days
 		if !pin {
 			pinType = waE2E.PinInChatMessage_UNPIN_FOR_ALL
+			duration = 0
 		}
+
 		msg := &waE2E.Message{
+			MessageContextInfo: &waE2E.MessageContextInfo{
+				MessageAddOnDurationInSecs: proto.Uint32(duration),
+			},
 			PinInChatMessage: &waE2E.PinInChatMessage{
-				Key:               ctx.Client.BuildMessageKey(chat, senderJID, types.MessageID(msgID)),
+				Key:               key,
 				Type:              pinType.Enum(),
 				SenderTimestampMS: proto.Int64(time.Now().UnixMilli()),
 			},
 		}
+
 		if _, err := ctx.Client.SendMessage(context.Background(), chat, msg); err != nil {
 			if pin {
-				ctx.Reply(T().PinFailed)
+				ctx.Reply(T().MsgPinFailed)
 			} else {
-				ctx.Reply(T().UnpinFailed)
+				ctx.Reply(T().MsgUnpinFailed)
 			}
 			return nil
 		}
 		if pin {
-			ctx.Reply(T().PinOK)
+			ctx.Reply(T().MsgPinOK)
 		} else {
-			ctx.Reply(T().UnpinOK)
+			ctx.Reply(T().MsgUnpinOK)
 		}
 		return nil
 	}
@@ -143,6 +172,17 @@ func unarchiveCmd(ctx *Context) error {
 func leaveCmd(ctx *Context) error {
 	ctx.Reply(T().LeaveOK)
 	return ctx.Client.LeaveGroup(context.Background(), ctx.Event.Info.Chat)
+}
+
+func clearCmd(ctx *Context) error {
+	chat := ctx.Event.Info.Chat
+	patch := appstate.BuildClearChat(chat, ctx.Event.Info.Timestamp, nil)
+	if err := ctx.Client.SendAppState(context.Background(), patch); err != nil {
+		ctx.Reply(T().ClearFailed)
+		return nil
+	}
+	ctx.Reply(T().ClearOK)
+	return nil
 }
 
 func starCmd(ctx *Context) error {

@@ -8,7 +8,7 @@ import (
 func init() {
 	Register(&Command{
 		Pattern:  "antispam",
-		IsGroup:  true,
+		IsGroup:  false,
 		IsAdmin:  true,
 		Category: "group",
 		Func: func(ctx *Context) error {

@@ -191,6 +191,10 @@ func moderationHook(client *whatsmeow.Client, evt *events.Message) {
 
 	// ── DM antispam ───────────────────────────────────────────────────────────
 	if !isGroup {
+		// Skip old messages arriving during device sync.
+		if time.Since(evt.Info.Timestamp) > 30*time.Second {
+			return
+		}
 		dmKey := senderUser
 		dmSpamMu.Lock()
 		now := time.Now()
@@ -307,7 +311,8 @@ func moderationHook(client *whatsmeow.Client, evt *events.Message) {
 
 	// 4. antispam (group)
 	if getAntispamMode(chatJID) != "off" {
-		if !isAntispamWhitelisted(chatJID, senderUser) {
+		// Skip old messages arriving during device sync.
+		if time.Since(evt.Info.Timestamp) <= 30*time.Second && !isAntispamWhitelisted(chatJID, senderUser) {
 			spamKey := chatJID + ":" + senderUser
 			spamMu.Lock()
 			now := time.Now()

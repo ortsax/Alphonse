@@ -193,11 +193,17 @@ type Strings struct {
 	// del
 	DelUsage string
 
-	// pin/unpin
+	// pin/unpin (chat)
 	PinOK       string
 	PinFailed   string
 	UnpinOK     string
 	UnpinFailed string
+
+	// pin/unpin (message)
+	MsgPinOK       string
+	MsgPinFailed   string
+	MsgUnpinOK     string
+	MsgUnpinFailed string
 
 	// archive/unarchive
 	ArchiveOK      string
@@ -215,6 +221,10 @@ type Strings struct {
 
 	// leave
 	LeaveOK string
+
+	// clear
+	ClearOK     string
+	ClearFailed string
 
 	// report
 	ReportUsage   string
@@ -417,6 +427,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Failed to pin chat.",
 		UnpinOK:           "Chat unpinned.",
 		UnpinFailed:       "Failed to unpin chat.",
+		MsgPinOK:          "Message pinned.",
+		MsgPinFailed:      "Failed to pin message.",
+		MsgUnpinOK:        "Message unpinned.",
+		MsgUnpinFailed:    "Failed to unpin message.",
 		ArchiveOK:         "Chat archived.",
 		ArchiveFailed:     "Failed to archive chat.",
 		UnarchiveOK:       "Chat unarchived.",
@@ -428,6 +442,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Message unstarred.",
 		UnstarFailed:      "Failed to unstar message.",
 		LeaveOK:           "Goodbye! Leaving the group.",
+		ClearOK:           "Chat cleared.",
+		ClearFailed:       "Failed to clear chat.",
 		ReportUsage:       "Reply to a message to report it.",
 		ReportDone:        "✅ Report submitted. Report ID: %s",
 		ReportDoneNoID:    "✅ Report submitted.",
@@ -573,6 +589,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Error al anclar el chat.",
 		UnpinOK:           "Chat desanclado.",
 		UnpinFailed:       "Error al desanclar el chat.",
+		MsgPinOK:          "Mensaje fijado.",
+		MsgPinFailed:      "Error al fijar el mensaje.",
+		MsgUnpinOK:        "Mensaje desfijado.",
+		MsgUnpinFailed:    "Error al desfijar el mensaje.",
 		ArchiveOK:         "Chat archivado.",
 		ArchiveFailed:     "Error al archivar el chat.",
 		UnarchiveOK:       "Chat desarchivado.",
@@ -584,7 +604,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Estrella quitada del mensaje.",
 		UnstarFailed:      "Error al quitar la estrella del mensaje.",
 		LeaveOK:           "¡Hasta luego! Saliendo del grupo.",
-		ReportUsage:       "Responde a un mensaje para reportarlo.",
+		ClearOK:           "Chat borrado.",
+		ClearFailed:       "Error al borrar el chat.",
 		ReportDone:        "✅ Reporte enviado. ID del reporte: %s",
 		ReportDoneNoID:    "✅ Reporte enviado.",
 		ReportFailed:      "Error al enviar el reporte: %s",
@@ -729,6 +750,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Falha ao fixar o chat.",
 		UnpinOK:           "Chat desafixado.",
 		UnpinFailed:       "Falha ao desafixar o chat.",
+		MsgPinOK:          "Mensagem fixada.",
+		MsgPinFailed:      "Falha ao fixar a mensagem.",
+		MsgUnpinOK:        "Mensagem desafixada.",
+		MsgUnpinFailed:    "Falha ao desafixar a mensagem.",
 		ArchiveOK:         "Chat arquivado.",
 		ArchiveFailed:     "Falha ao arquivar o chat.",
 		UnarchiveOK:       "Chat desarquivado.",
@@ -740,7 +765,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Estrela removida da mensagem.",
 		UnstarFailed:      "Falha ao remover a estrela da mensagem.",
 		LeaveOK:           "Adeus! A sair do grupo.",
-		ReportUsage:       "Responda a uma mensagem para denunciá-la.",
+		ClearOK:           "Chat limpo.",
+		ClearFailed:       "Falha ao limpar o chat.",
 		ReportDone:        "✅ Denúncia enviada. ID: %s",
 		ReportDoneNoID:    "✅ Denúncia enviada.",
 		ReportFailed:      "Falha ao enviar denúncia: %s",
@@ -885,6 +911,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "فشل تثبيت المحادثة.",
 		UnpinOK:           "تم إلغاء تثبيت المحادثة.",
 		UnpinFailed:       "فشل إلغاء تثبيت المحادثة.",
+		MsgPinOK:          "تم تثبيت الرسالة.",
+		MsgPinFailed:      "فشل تثبيت الرسالة.",
+		MsgUnpinOK:        "تم إلغاء تثبيت الرسالة.",
+		MsgUnpinFailed:    "فشل إلغاء تثبيت الرسالة.",
 		ArchiveOK:         "تم أرشفة المحادثة.",
 		ArchiveFailed:     "فشل أرشفة المحادثة.",
 		UnarchiveOK:       "تم إلغاء أرشفة المحادثة.",
@@ -896,7 +926,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "تم إزالة النجمة من الرسالة.",
 		UnstarFailed:      "فشل إزالة النجمة من الرسالة.",
 		LeaveOK:           "وداعاً! جارٍ مغادرة المجموعة.",
-		ReportUsage:       "ردّ على رسالة للإبلاغ عنها.",
+		ClearOK:           "تم مسح المحادثة.",
+		ClearFailed:       "فشل مسح المحادثة.",
 		ReportDone:        "✅ تم إرسال البلاغ. معرّف البلاغ: %s",
 		ReportDoneNoID:    "✅ تم إرسال البلاغ.",
 		ReportFailed:      "فشل إرسال البلاغ: %s",
@@ -1041,6 +1072,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "चैट पिन करने में विफल।",
 		UnpinOK:           "चैट अनपिन की गई।",
 		UnpinFailed:       "चैट अनपिन करने में विफल।",
+		MsgPinOK:          "संदेश पिन किया गया।",
+		MsgPinFailed:      "संदेश पिन करने में विफल।",
+		MsgUnpinOK:        "संदेश अनपिन किया गया।",
+		MsgUnpinFailed:    "संदेश अनपिन करने में विफल।",
 		ArchiveOK:         "चैट संग्रहीत की गई।",
 		ArchiveFailed:     "चैट संग्रहीत करने में विफल।",
 		UnarchiveOK:       "चैट असंग्रहीत की गई।",
@@ -1052,7 +1087,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "संदेश से स्टार हटाया गया।",
 		UnstarFailed:      "संदेश से स्टार हटाने में विफल।",
 		LeaveOK:           "अलविदा! समूह छोड़ रहा हूँ।",
-		ReportUsage:       "किसी संदेश की रिपोर्ट करने के लिए उसका जवाब दें।",
+		ClearOK:           "चैट साफ़ की गई।",
+		ClearFailed:       "चैट साफ़ करने में विफल।",
 		ReportDone:        "✅ रिपोर्ट भेजी गई। रिपोर्ट ID: %s",
 		ReportDoneNoID:    "✅ रिपोर्ट भेजी गई।",
 		ReportFailed:      "रिपोर्ट भेजने में विफल: %s",
@@ -1197,6 +1233,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Echec de l'epinglage de la discussion.",
 		UnpinOK:           "Discussion desepinglee.",
 		UnpinFailed:       "Echec du desepinglage de la discussion.",
+		MsgPinOK:          "Message epingle.",
+		MsgPinFailed:      "Echec de l'epinglage du message.",
+		MsgUnpinOK:        "Message desepingle.",
+		MsgUnpinFailed:    "Echec du desepinglage du message.",
 		ArchiveOK:         "Discussion archivee.",
 		ArchiveFailed:     "Echec de l'archivage de la discussion.",
 		UnarchiveOK:       "Discussion desarchivee.",
@@ -1208,7 +1248,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Favori retire du message.",
 		UnstarFailed:      "Echec du retrait du favori du message.",
 		LeaveOK:           "Au revoir ! Je quitte le groupe.",
-		ReportUsage:       "Répondez à un message pour le signaler.",
+		ClearOK:           "Discussion effacée.",
+		ClearFailed:       "Echec de l'effacement de la discussion.",
 		ReportDone:        "✅ Signalement envoyé. ID : %s",
 		ReportDoneNoID:    "✅ Signalement envoyé.",
 		ReportFailed:      "Échec du signalement : %s",
@@ -1353,6 +1394,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Fehler beim Anheften des Chats.",
 		UnpinOK:           "Chat losgelöst.",
 		UnpinFailed:       "Fehler beim Losloesen des Chats.",
+		MsgPinOK:          "Nachricht angeheftet.",
+		MsgPinFailed:      "Fehler beim Anheften der Nachricht.",
+		MsgUnpinOK:        "Nachricht losgeloest.",
+		MsgUnpinFailed:    "Fehler beim Losloesen der Nachricht.",
 		ArchiveOK:         "Chat archiviert.",
 		ArchiveFailed:     "Fehler beim Archivieren des Chats.",
 		UnarchiveOK:       "Chat aus dem Archiv geholt.",
@@ -1364,7 +1409,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Markierung der Nachricht entfernt.",
 		UnstarFailed:      "Fehler beim Entfernen der Markierung.",
 		LeaveOK:           "Auf Wiedersehen! Verlasse die Gruppe.",
-		ReportUsage:       "Antworte auf eine Nachricht, um sie zu melden.",
+		ClearOK:           "Chat geleert.",
+		ClearFailed:       "Fehler beim Leeren des Chats.",
 		ReportDone:        "✅ Meldung gesendet. Melde-ID: %s",
 		ReportDoneNoID:    "✅ Meldung gesendet.",
 		ReportFailed:      "Meldung fehlgeschlagen: %s",
@@ -1509,6 +1555,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Не удалось закрепить чат.",
 		UnpinOK:           "Чат откреплён.",
 		UnpinFailed:       "Не удалось открепить чат.",
+		MsgPinOK:          "Сообщение закреплено.",
+		MsgPinFailed:      "Не удалось закрепить сообщение.",
+		MsgUnpinOK:        "Сообщение откреплено.",
+		MsgUnpinFailed:    "Не удалось открепить сообщение.",
 		ArchiveOK:         "Чат архивирован.",
 		ArchiveFailed:     "Не удалось архивировать чат.",
 		UnarchiveOK:       "Чат разархивирован.",
@@ -1520,7 +1570,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Сообщение убрано из избранного.",
 		UnstarFailed:      "Не удалось убрать сообщение из избранного.",
 		LeaveOK:           "До свидания! Покидаю группу.",
-		ReportUsage:       "Ответьте на сообщение, чтобы пожаловаться на него.",
+		ClearOK:           "Чат очищен.",
+		ClearFailed:       "Не удалось очистить чат.",
 		ReportDone:        "✅ Жалоба отправлена. ID жалобы: %s",
 		ReportDoneNoID:    "✅ Жалоба отправлена.",
 		ReportFailed:      "Не удалось отправить жалобу: %s",
@@ -1665,6 +1716,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Sohbet sabitlenirken hata olustu.",
 		UnpinOK:           "Sohbetin sabitleme kaldirildi.",
 		UnpinFailed:       "Sohbetin sabitleme kaldirilirken hata olustu.",
+		MsgPinOK:          "Mesaj sabitlenen.",
+		MsgPinFailed:      "Mesaj sabitlenirken hata olustu.",
+		MsgUnpinOK:        "Mesajin sabitleme kaldirildi.",
+		MsgUnpinFailed:    "Mesajin sabitleme kaldirilirken hata olustu.",
 		ArchiveOK:         "Sohbet arsivlendi.",
 		ArchiveFailed:     "Sohbet arsivlenirken hata olustu.",
 		UnarchiveOK:       "Sohbet arsivden cikarildi.",
@@ -1676,7 +1731,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Mesajin yildizi kaldirildi.",
 		UnstarFailed:      "Mesajin yildizi kaldirilirken hata olustu.",
 		LeaveOK:           "Hosca kalin! Gruptan ayriliyorum.",
-		ReportUsage:       "Bir mesaji rapor etmek icin ona yanit verin.",
+		ClearOK:           "Sohbet temizlendi.",
+		ClearFailed:       "Sohbet temizlenirken hata olustu.",
 		ReportDone:        "✅ Rapor gonderildi. Rapor ID: %s",
 		ReportDoneNoID:    "✅ Rapor gonderildi.",
 		ReportFailed:      "Rapor gonderilemedi: %s",
@@ -1821,6 +1877,10 @@ var translations = map[string]*Strings{
 		PinFailed:         "Imeshindwa kupinnia mazungumzo.",
 		UnpinOK:           "Mazungumzo yamefutwa pinni.",
 		UnpinFailed:       "Imeshindwa kufuta pinni ya mazungumzo.",
+		MsgPinOK:          "Ujumbe umepinniwa.",
+		MsgPinFailed:      "Imeshindwa kupinnia ujumbe.",
+		MsgUnpinOK:        "Ujumbe umefutwa pinni.",
+		MsgUnpinFailed:    "Imeshindwa kufuta pinni ya ujumbe.",
 		ArchiveOK:         "Mazungumzo yamehifadhiwa.",
 		ArchiveFailed:     "Imeshindwa kuhifadhi mazungumzo.",
 		UnarchiveOK:       "Mazungumzo yamefunguliwa kutoka kumbukumbu.",
@@ -1832,7 +1892,8 @@ var translations = map[string]*Strings{
 		UnstarOK:          "Nyota imeondolewa kwenye ujumbe.",
 		UnstarFailed:      "Imeshindwa kuondoa nyota kwenye ujumbe.",
 		LeaveOK:           "Kwaheri! Naondoka kwenye kikundi.",
-		ReportUsage:       "Jibu ujumbe ili kuripoti.",
+		ClearOK:           "Mazungumzo yamefutwa.",
+		ClearFailed:       "Imeshindwa kufuta mazungumzo.",
 		ReportDone:        "✅ Ripoti imepelekwa. ID ya ripoti: %s",
 		ReportDoneNoID:    "✅ Ripoti imepelekwa.",
 		ReportFailed:      "Imeshindwa kupeleka ripoti: %s",
