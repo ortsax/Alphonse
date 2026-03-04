@@ -253,6 +253,12 @@ func main() {
 	}
 	stopSpin("Connected.")
 
+	// Pre-warm Signal sessions for all known contacts in the background so
+	// the first message to any contact after startup is instant.
+	if client.Store.ID != nil {
+		plugins.StartWarmup(client)
+	}
+
 	if client.Store.ID == nil {
 		if *phoneArg == "" {
 			fmt.Println("No session found. Please provide a phone number using --phone-number")

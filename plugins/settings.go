@@ -1,9 +1,9 @@
 package plugins
 
 import (
-	"slices"
 	"database/sql"
 	"encoding/json"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -18,17 +18,17 @@ const (
 
 // Settings holds the in-memory bot configuration.
 type Settings struct {
-	mu               sync.RWMutex
-	Prefixes         []string
-	Sudoers          []string
-	BannedUsers      []string
-	Mode             Mode
-	Language         string
-	DisabledCmds     []string
-	GCDisabled       bool
-	AutoSaveStatus   bool
-	AutoLikeStatus   bool
-	AntiDelete       bool
+	mu             sync.RWMutex
+	Prefixes       []string
+	Sudoers        []string
+	BannedUsers    []string
+	Mode           Mode
+	Language       string
+	DisabledCmds   []string
+	GCDisabled     bool
+	AutoSaveStatus bool
+	AutoLikeStatus bool
+	AntiDelete     bool
 }
 
 // BotSettings is the global settings instance, seeded with defaults.
@@ -39,7 +39,7 @@ var BotSettings = &Settings{
 	Language: "en",
 }
 
-var settingsDB   *sql.DB
+var settingsDB *sql.DB
 var settingsUser string // bare phone number of the bot owner
 
 // InitDB creates the bot_settings table if it doesn't exist.
@@ -336,8 +336,8 @@ func (s *Settings) BanUser(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if slices.Contains(s.BannedUsers, id) {
-			return
-		}
+		return
+	}
 	s.BannedUsers = append(s.BannedUsers, id)
 }
 

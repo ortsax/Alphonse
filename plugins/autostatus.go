@@ -186,5 +186,3 @@ func forwardStatusToOwner(client *whatsmeow.Client, evt *events.Message) {
 		fmt.Printf("[AUTOSAVE] forwarded status from %s at %s\n", evt.Info.Sender.User, time.Now().Format("15:04:05"))
 	}
 }
-
-

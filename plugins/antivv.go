@@ -126,4 +126,3 @@ func vvQuoteContext(evt *events.Message) *waProto.ContextInfo {
 		RemoteJID:     proto.String(evt.Info.Chat.String()),
 	}
 }
-

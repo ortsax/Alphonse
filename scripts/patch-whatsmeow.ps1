@@ -73,9 +73,11 @@ if ($sendContent -notlike "*doUnlock*") {
     $patched = $sendContent -replace `
         'resp\.DebugTimings\.Queue = time\.Since\(start\)\r?\n\tdefer cli\.messageSendLock\.Unlock\(\)', `
         ("resp.DebugTimings.Queue = time.Since(start)`n" +
-         "`t// Release the send lock before waiting for the server ACK so that queued`n" +
-         "`t// messages don't pile up behind a 100-500 ms round-trip.  A one-shot func`n" +
-         "`t// is used so the defer still fires as a safety-net on unexpected returns.`n" +
+         "`t// The lock must be held during encrypt+write so Signal session state`n" +
+         "`t// advances correctly. It does NOT need to be held while waiting for the`n" +
+         "`t// server ACK, which is pure network I/O. Releasing early lets the next`n" +
+         "`t// queued send start its encrypt+write immediately in parallel with our ACK`n" +
+         "`t// wait, cutting queue latency from (N x RTT) to (N x encrypt_ms + 1 RTT).`n" +
          "`tunlocked := false`n" +
          "`tdoUnlock := func() {`n" +
          "`t`tif !unlocked {`n" +
@@ -94,7 +96,7 @@ if ($sendContent -notlike "*doUnlock*") {
     # Insert doUnlock() call right before 'var respNode *waBinary.Node' (after send, before ACK wait)
     $patched = $sendContent -replace `
         '(\tcli\.cancelResponse\(req\.ID, respChan\)\r?\n\t\treturn\r?\n\t\}\r?\n)\tvar respNode \*waBinary\.Node', `
-        "`$1`t// Message is written to the socket; release the lock now so the next send`n`t// in the queue can encrypt and write while we wait for the server ACK.`n`tdoUnlock()`n`tvar respNode *waBinary.Node"
+        "`$1`t// Message is written to the socket. Unlock now so the next sender can`n`t// begin its encrypt+write while we await the server ACK.`n`tdoUnlock()`n`tvar respNode *waBinary.Node"
     if ($patched -eq $sendContent) {
         Write-Warning "send.go: early-unlock insertion anchor not found — patch may need updating"
     } else {

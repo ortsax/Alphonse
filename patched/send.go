@@ -14,6 +14,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"sort"
 	"strconv"
@@ -371,9 +372,11 @@ func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E
 	// (everything will explode if you send a message to the same user twice in parallel)
 	cli.messageSendLock.Lock()
 	resp.DebugTimings.Queue = time.Since(start)
-	// Release the send lock before waiting for the server ACK so that queued
-	// messages don't pile up behind a 100-500 ms round-trip.  A one-shot func
-	// is used so the defer still fires as a safety-net on unexpected returns.
+	// The lock must be held during encrypt+write so Signal session state
+	// advances correctly. It does NOT need to be held while waiting for the
+	// server ACK, which is pure network I/O. Releasing early lets the next
+	// queued send start its encrypt+write immediately in parallel with our ACK
+	// wait, cutting queue latency from (N × RTT) to (N × encrypt_ms + 1 RTT).
 	unlocked := false
 	doUnlock := func() {
 		if !unlocked {
@@ -422,8 +425,8 @@ func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E
 		cli.cancelResponse(req.ID, respChan)
 		return
 	}
-	// Message is written to the socket; release the lock now so the next send
-	// in the queue can encrypt and write while we wait for the server ACK.
+	// Message is written to the socket. Unlock now so the next sender can
+	// begin its encrypt+write while we await the server ACK.
 	doUnlock()
 	var respNode *waBinary.Node
 	var timeoutChan <-chan time.Time
@@ -1295,7 +1298,9 @@ func (cli *Client) encryptMessageForDevices(
 		sessionAddressToJID[addr] = jid
 	}
 
+	t0Sessions := time.Now()
 	existingSessions, ctx, err := cli.Store.WithCachedSessions(ctx, sessionAddresses)
+	sessionLoadMs := time.Since(t0Sessions)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to prefetch sessions: %w", err)
 	}
@@ -1305,8 +1310,15 @@ func (cli *Client) encryptMessageForDevices(
 			retryDevices = append(retryDevices, sessionAddressToJID[addr])
 		}
 	}
+	fmt.Fprintf(os.Stderr, "[ENC DEBUG] %s: total_devices=%d session_load=%s missing_sessions=%d missing=%v\n",
+		id, len(allDevices), sessionLoadMs.Round(time.Millisecond), len(retryDevices), retryDevices)
+	t0PreKey := time.Now()
 	bundles := cli.fetchPreKeysNoError(ctx, retryDevices)
+	if len(retryDevices) > 0 {
+		fmt.Fprintf(os.Stderr, "[ENC DEBUG] %s: prekey_fetch took=%s\n", id, time.Since(t0PreKey).Round(time.Millisecond))
+	}
 
+	t0Enc := time.Now()
 	for _, jid := range allDevices {
 		plaintext := msgPlaintext
 		if (jid.User == ownJID.User || jid.User == ownLID.User) && dsmPlaintext != nil {
@@ -1326,17 +1338,43 @@ func (cli *Client) encryptMessageForDevices(
 			}
 			continue
 		}
-
 		participantNodes = append(participantNodes, *encrypted)
 		if isPreKey {
 			includeIdentity = true
 		}
 	}
+	fmt.Fprintf(os.Stderr, "[ENC DEBUG] %s: encrypt_loop took=%s\n", id, time.Since(t0Enc).Round(time.Millisecond))
 	err = cli.Store.PutCachedSessions(ctx)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to save cached sessions: %w", err)
 	}
 	return participantNodes, includeIdentity, nil
+}
+
+// WarmSessions pre-establishes Signal sessions for the given user JIDs without
+// sending any message. It fetches prekey bundles from WhatsApp and processes
+// them through the Signal library, saving the resulting sessions to SQLite so
+// subsequent sends to these JIDs skip the prekey-fetch round-trip entirely.
+//
+// Designed to be called at startup in a background goroutine. Safe to call
+// concurrently with real sends — each call uses its own session cache context.
+func (cli *Client) WarmSessions(ctx context.Context, jids []types.JID) error {
+	if len(jids) == 0 {
+		return nil
+	}
+	allDevices, err := cli.GetUserDevices(ctx, jids)
+	if err != nil {
+		return fmt.Errorf("WarmSessions GetUserDevices: %w", err)
+	}
+	if len(allDevices) == 0 {
+		return nil
+	}
+	// Reuse the same session-establishment path as a real send, but discard
+	// the resulting encrypted nodes — we only care about the side effect of
+	// PutCachedSessions storing the new sessions to SQLite.
+	dummy := []byte{0}
+	_, _, err = cli.encryptMessageForDevices(ctx, allDevices, "warmup", dummy, nil, nil)
+	return err
 }
 
 func (cli *Client) encryptMessageForDeviceAndWrap(

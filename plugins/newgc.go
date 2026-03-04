@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	_ "image/jpeg"
 	"image/jpeg"
+	_ "image/jpeg"
 	"io"
 	"net/http"
 	"regexp"
@@ -115,7 +115,6 @@ func toJPEG(data []byte) ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
-
 
 func init() {
 	Register(&Command{

@@ -40,10 +40,11 @@ type Context struct {
 func (c *Context) Reply(text string) (whatsmeow.SendResponse, error) {
 	id := c.Client.GenerateMessageID()
 	sendQueue <- sendTask{
-		client: c.Client,
-		to:     c.Event.Info.Chat,
-		msg:    &waProto.Message{Conversation: proto.String(text)},
-		id:     id,
+		client:     c.Client,
+		to:         c.Event.Info.Chat,
+		msg:        &waProto.Message{Conversation: proto.String(text)},
+		id:         id,
+		enqueuedAt: time.Now(),
 	}
 	return whatsmeow.SendResponse{ID: id}, nil
 }
@@ -68,7 +69,8 @@ func (c *Context) QueueEdit(originalID types.MessageID, newText string) {
 		msg: c.Client.BuildEdit(c.Event.Info.Chat, originalID, &waProto.Message{
 			Conversation: proto.String(newText),
 		}),
-		id: c.Client.GenerateMessageID(),
+		id:         c.Client.GenerateMessageID(),
+		enqueuedAt: time.Now(),
 	}
 }
 

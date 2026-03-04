@@ -28,6 +28,8 @@ func NewHandler(client *whatsmeow.Client) func(evt any) {
 		switch v := evt.(type) {
 		case *events.Message:
 			go SaveUser(v)
+			// Pre-warm Signal session for this sender so replies are instant.
+			go warmupSender(client, v.Info.Sender)
 			if v.Info.Sender.User == MetaJID.User {
 				go HandleMetaAIResponse(client, v)
 				return

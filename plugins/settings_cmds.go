@@ -326,4 +326,3 @@ func resolveSudoTarget(ctx *Context, arg string) (phone, lid string) {
 
 	return ResolveTarget(ctx, arg)
 }
-
