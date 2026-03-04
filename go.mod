@@ -3,12 +3,12 @@ module ortsax
 go 1.25.0
 
 require (
-	go.mau.fi/whatsmeow v0.0.0-20260227112304-c9652e4448a2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.11.2
 	github.com/rs/zerolog v1.34.0
 	go.mau.fi/util v0.9.6
+	go.mau.fi/whatsmeow v0.0.0-20260227112304-c9652e4448a2
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.46.1
 )

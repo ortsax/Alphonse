@@ -154,6 +154,7 @@ var DeviceProps = &waCompanionReg.DeviceProps{
 	RequireFullSync: proto.Bool(false),
 }
 
+
 // SetAndroidMode configures the client payload to identify as an Android companion,
 // matching Baileys' Browsers.android(name) setup. name is shown on the linked devices list.
 func SetAndroidMode(name string) {
@@ -164,7 +165,6 @@ func SetAndroidMode(name string) {
 	BaseClientPayload.UserAgent.OsBuildNumber = proto.String("")
 	BaseClientPayload.WebInfo = nil
 }
-
 func SetOSInfo(name string, version [3]uint32) {
 	DeviceProps.Os = &name
 	DeviceProps.Version.Primary = &version[0]
