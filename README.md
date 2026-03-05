@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="media/logo.png" alt="Alphonse" width="160"/>
+  <img src="media/logo.png" alt="Alphonse" width="550"/>
   <h1>Alphonse</h1>
   <p>A self-hosted WhatsApp bot written in Go.</p>
   <a href="https://ortsax.github.io/Alphonse/"><strong>Full Documentation →</strong></a>
