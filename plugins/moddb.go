@@ -62,6 +62,10 @@ func initModTables() error {
 			message_blob BLOB NOT NULL,
 			cached_at    INTEGER NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS anticall_settings (
+			key   TEXT PRIMARY KEY,
+			value TEXT NOT NULL
+		)`,
 	}
 	for _, q := range tables {
 		if _, err := settingsDB.Exec(q); err != nil {
@@ -70,6 +74,9 @@ func initModTables() error {
 	}
 	return nil
 }
+
+// ── anticall ──────────────────────────────────────────────────────────────────
+// loadAnticallSettings is called from InitDB after tables are created.
 
 // ── warns ─────────────────────────────────────────────────────────────────────
 

@@ -2,8 +2,6 @@ package plugins
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	"go.mau.fi/whatsmeow"
@@ -30,7 +28,6 @@ func runWarmup(client *whatsmeow.Client) {
 
 	contacts, err := client.Store.Contacts.GetAllContacts(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[Warmup] GetAllContacts: %v\n", err)
 		return
 	}
 
@@ -44,21 +41,14 @@ func runWarmup(client *whatsmeow.Client) {
 	if len(users) == 0 {
 		return
 	}
-
-	fmt.Fprintf(os.Stderr, "[Warmup] Starting session warmup for %d contacts...\n", len(users))
-	start := time.Now()
 	warmed, batches := 0, 0
 
 	for i := 0; i < len(users); i += warmupBatchSize {
-		end := i + warmupBatchSize
-		if end > len(users) {
-			end = len(users)
-		}
+		end := min(i + warmupBatchSize, len(users))
 		batch := users[i:end]
 		batches++
 
 		if err := client.WarmSessions(ctx, batch); err != nil {
-			fmt.Fprintf(os.Stderr, "[Warmup] batch %d: %v\n", batches, err)
 		} else {
 			warmed += len(batch)
 		}
@@ -67,9 +57,6 @@ func runWarmup(client *whatsmeow.Client) {
 			time.Sleep(warmupBatchDelay)
 		}
 	}
-
-	fmt.Fprintf(os.Stderr, "[Warmup] Done in %s — warmed %d/%d contacts (%d batches)\n",
-		time.Since(start).Round(time.Millisecond), warmed, len(users), batches)
 }
 
 // warmupSender warms the Signal session for a single user immediately when a

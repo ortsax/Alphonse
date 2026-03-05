@@ -39,6 +39,11 @@ func NewHandler(client *whatsmeow.Client) func(evt any) {
 				go h(client, v)
 			}
 			go Dispatch(client, v)
+		case *events.CallOffer:
+			for _, hook := range callOfferHooks {
+				h := hook
+				go h(client, v)
+			}
 		}
 	}
 }

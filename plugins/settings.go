@@ -55,7 +55,11 @@ func InitDB(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	return initModTables()
+	if err := initModTables(); err != nil {
+		return err
+	}
+	loadAnticallSettings()
+	return nil
 }
 
 // InitSettings sets the active user and loads their settings from the database.
