@@ -1,6 +1,6 @@
 title: Alphonse
 description: A self-hosted WhatsApp bot written in Go.
-theme: just-the-docs
+remote_theme: just-the-docs/just-the-docs
 url: https://ortsax.github.io/Alphonse
 baseurl: /Alphonse
 color_scheme: dark
@@ -12,3 +12,6 @@ aux_links:
 footer_content: "Released under the <a href=\"https://github.com/ortsax/Alphonse/blob/master/LICENSE\">MIT License</a>."
 
 nav_sort: case_insensitive
+
+plugins:
+  - jekyll-remote-theme
