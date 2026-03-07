@@ -1,0 +1,15 @@
+services:
+  alphonse:
+    build:
+      context: .
+      args:
+        VERSION: "0.0.1"   # update this when releasing a new version
+    image: alphonse:0.0.1
+    container_name: alphonse
+    restart: unless-stopped
+    volumes:
+      # Persists the session database and your .env config file.
+      # Create ./data/.env from .env.example before first run.
+      - ./data:/data
+    stdin_open: true
+    tty: true

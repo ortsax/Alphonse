@@ -1,0 +1,105 @@
+name: Nightly
+
+on:
+  push:
+    branches: [master]
+
+# Only one nightly build at a time. A newer commit cancels the previous build.
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  nightly:
+    name: Build & Publish Nightly
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Resolve version
+        id: version
+        run: |
+          BASE=$(grep -oP 'Version\s+=\s+"\K[^"]+' version.go)
+          SHA=$(git rev-parse --short HEAD)
+          echo "VERSION=${BASE}-nightly.${SHA}" >> "$GITHUB_OUTPUT"
+          echo "SHA=${SHA}"                      >> "$GITHUB_OUTPUT"
+          echo "BASE=${BASE}"                    >> "$GITHUB_OUTPUT"
+
+      - name: Build binaries
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          LDFLAGS="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}"
+
+          mkdir -p dist
+
+          build() {
+            local GOOS=$1 GOARCH=$2 EXT=$3
+            local BIN="dist/alphonse${EXT}"
+            local NAME="alphonse_${GOOS}_${GOARCH}"
+            echo -n "  ${GOOS}/${GOARCH} ... "
+            GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -trimpath -o "$BIN" .
+            if [ "$GOOS" = "windows" ]; then
+              zip -j "dist/${NAME}.zip" "$BIN"
+            else
+              tar -czf "dist/${NAME}.tar.gz" -C dist alphonse
+            fi
+            rm "$BIN"
+            echo "done"
+          }
+
+          build linux   amd64 ""
+          build linux   arm64 ""
+          build windows amd64 ".exe"
+          build darwin  amd64 ""
+          build darwin  arm64 ""
+
+      - name: Move nightly tag to this commit
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name  "GitHub Actions"
+          git tag -f nightly
+          git push -f origin nightly
+
+      - name: Publish nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Nightly Build"
+          prerelease: true
+          make_latest: false
+          body: |
+            **Nightly build** — compiled automatically from the latest commit on `master`.
+
+            > ⚠️ This is a development snapshot and may be unstable.
+            > Use a [stable release](../../releases/latest) for production.
+
+            | | |
+            |---|---|
+            | **Base version** | `${{ steps.version.outputs.BASE }}` |
+            | **Commit** | [`${{ steps.version.outputs.SHA }}`](../../commit/${{ steps.version.outputs.SHA }}) |
+            | **Full version** | `${{ steps.version.outputs.VERSION }}` |
+
+            ### Platform downloads
+            | Platform | File |
+            |----------|------|
+            | Linux x86-64 | `alphonse_linux_amd64.tar.gz` |
+            | Linux ARM64 | `alphonse_linux_arm64.tar.gz` |
+            | Windows x86-64 | `alphonse_windows_amd64.zip` |
+            | macOS (Apple Silicon) | `alphonse_darwin_arm64.tar.gz` |
+            | macOS (Intel) | `alphonse_darwin_amd64.tar.gz` |
+          files: dist/*
+          fail_on_unmatched_files: true
