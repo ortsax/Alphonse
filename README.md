@@ -18,7 +18,7 @@
 
 ---
 
-Alphonse connects to WhatsApp via **phone-number pairing** (no QR code), runs as a single binary, and ships with moderation, media tools, AI integration, and a plugin system.
+Alphonse connects to WhatsApp via **phone-number pairing**, runs as a single binary, and features wa moderation, media tools, AI integration, and a plugin system.
 
 ## Quick Start
 
