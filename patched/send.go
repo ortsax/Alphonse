@@ -375,7 +375,7 @@ func (cli *Client) SendMessage(ctx context.Context, to types.JID, message *waE2E
 	// advances correctly. It does NOT need to be held while waiting for the
 	// server ACK, which is pure network I/O. Releasing early lets the next
 	// queued send start its encrypt+write immediately in parallel with our ACK
-	// wait, cutting queue latency from (N × RTT) to (N × encrypt_ms + 1 RTT).
+	// wait, cutting queue latency from (N x RTT) to (N x encrypt_ms + 1 RTT).
 	unlocked := false
 	doUnlock := func() {
 		if !unlocked {
@@ -1328,6 +1328,7 @@ func (cli *Client) encryptMessageForDevices(
 			}
 			continue
 		}
+
 		participantNodes = append(participantNodes, *encrypted)
 		if isPreKey {
 			includeIdentity = true
@@ -1338,32 +1339,6 @@ func (cli *Client) encryptMessageForDevices(
 		return nil, false, fmt.Errorf("failed to save cached sessions: %w", err)
 	}
 	return participantNodes, includeIdentity, nil
-}
-
-// WarmSessions pre-establishes Signal sessions for the given user JIDs without
-// sending any message. It fetches prekey bundles from WhatsApp and processes
-// them through the Signal library, saving the resulting sessions to SQLite so
-// subsequent sends to these JIDs skip the prekey-fetch round-trip entirely.
-//
-// Designed to be called at startup in a background goroutine. Safe to call
-// concurrently with real sends — each call uses its own session cache context.
-func (cli *Client) WarmSessions(ctx context.Context, jids []types.JID) error {
-	if len(jids) == 0 {
-		return nil
-	}
-	allDevices, err := cli.GetUserDevices(ctx, jids)
-	if err != nil {
-		return fmt.Errorf("WarmSessions GetUserDevices: %w", err)
-	}
-	if len(allDevices) == 0 {
-		return nil
-	}
-	// Reuse the same session-establishment path as a real send, but discard
-	// the resulting encrypted nodes — we only care about the side effect of
-	// PutCachedSessions storing the new sessions to SQLite.
-	dummy := []byte{0}
-	_, _, err = cli.encryptMessageForDevices(ctx, allDevices, "warmup", dummy, nil, nil)
-	return err
 }
 
 func (cli *Client) encryptMessageForDeviceAndWrap(

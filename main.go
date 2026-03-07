@@ -90,6 +90,7 @@ func printHelp() {
    --list-sessions            List all paired sessions in the database
    --delete-session <number>  Permanently delete a session by phone
    --reset-session  <number>  Reset a session so it can be re-paired
+   --version                  Print version information and exit
    -h, --help                 Show this help screen
 
  Examples
@@ -99,6 +100,12 @@ func printHelp() {
    alphonse --list-sessions          Show all saved sessions
 
 `)
+	os.Exit(0)
+}
+
+// printVersion prints version, commit, and build date then exits.
+func printVersion() {
+	fmt.Printf("alphonse v%s\n  commit: %s\n  built:  %s\n", Version, Commit, BuildDate)
 	os.Exit(0)
 }
 
@@ -172,10 +179,14 @@ func main() {
 	listFlag := flag.Bool("list-sessions", false, "List all paired sessions stored in the database")
 	deleteFlag := flag.String("delete-session", "", "Permanently delete the session for the given phone number")
 	resetFlag := flag.String("reset-session", "", "Reset the session for the given phone number so it can be re-paired")
+	versionFlag := flag.Bool("version", false, "Print version information and exit")
 	flag.Parse()
 
 	if *helpFlag {
 		printHelp()
+	}
+	if *versionFlag {
+		printVersion()
 	}
 
 	ctx := context.Background()
@@ -252,12 +263,6 @@ func main() {
 		panic(err)
 	}
 	stopSpin("Connected.")
-
-	// Pre-warm Signal sessions for all known contacts in the background so
-	// the first message to any contact after startup is instant.
-	if client.Store.ID != nil {
-		plugins.StartWarmup(client)
-	}
 
 	if client.Store.ID == nil {
 		if *phoneArg == "" {
@@ -362,7 +367,19 @@ func runUpdate() {
 	}
 	exePath, _ = filepath.EvalSymlinks(exePath)
 	tmpPath := exePath + ".new"
-	ldflags := fmt.Sprintf("-s -w -X main.sourceDir=%s", sourceDir)
+	verOut, _ := exec.Command("git", "-C", sourceDir, "describe", "--tags", "--always", "--dirty").Output()
+	gitVer := strings.TrimSpace(string(verOut))
+	if gitVer == "" {
+		gitVer = Version
+	}
+	commitOut, _ := exec.Command("git", "-C", sourceDir, "rev-parse", "--short", "HEAD").Output()
+	gitCommit := strings.TrimSpace(string(commitOut))
+	if gitCommit == "" {
+		gitCommit = "unknown"
+	}
+	buildDate := time.Now().UTC().Format(time.RFC3339)
+	ldflags := fmt.Sprintf("-s -w -X main.Version=%s -X main.Commit=%s -X main.BuildDate=%s -X main.sourceDir=%s",
+		gitVer, gitCommit, buildDate, sourceDir)
 
 	cliProgress(50, "Building new binary...")
 	buildDone := make(chan error, 1)

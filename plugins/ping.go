@@ -26,7 +26,6 @@ func init() {
 				dt.Send
 			ms := float64(botTime.Microseconds()) / 1000
 
-			// Edit to show the real number (typically 2–15 ms on warm sessions).
 			ctx.QueueEdit(resp.ID, fmt.Sprintf(T().PongLatency, ms))
 			return nil
 		},

@@ -8,7 +8,7 @@ require (
 	github.com/lib/pq v1.11.2
 	github.com/rs/zerolog v1.34.0
 	go.mau.fi/util v0.9.6
-	go.mau.fi/whatsmeow v0.0.0-20260227112304-c9652e4448a2
+	go.mau.fi/whatsmeow v0.0.0-20260305215846-fc65416c22c4
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.46.1
 )
